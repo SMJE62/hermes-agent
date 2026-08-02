@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     network_mode: host
     volumes:
-      - ~/.hermes:/opt/data
+      - /mnt/ai_agent_storage/hermes:/opt/data
     environment:
       - HERMES_UID=${HERMES_UID:-10000}
       - HERMES_GID=${HERMES_GID:-10000}
@@ -68,9 +68,27 @@ services:
     depends_on:
       - gateway
     volumes:
-      - ~/.hermes:/opt/data
+      - /mnt/ai_agent_storage/hermes:/opt/data
     environment:
       - HERMES_UID=${HERMES_UID:-10000}
       - HERMES_GID=${HERMES_GID:-10000}
+      # Dashboard Basic Auth:
+      # Generate PASSWORD_HASH inside the Hermes image:
+      # docker run --rm --entrypoint python hermes-agent \
+      #   -c "from plugins.dashboard_auth.basic import hash_password; print(hash_password('your-password'))"
+      #
+      # Generate SECRET with:
+      # openssl rand -base64 32
+      #
+      # Store the generated values as Portainer stack environment variables. 
+      # SPECIAL NOTE 
+      # In the AUTH_PASSWORD_HASH string that you save in Portainer you must add extra $ to each $ otherwise the hash ends up getting truncated. 
+      # exaple: 
+      # scrypt$16384$8$1$TKY4F1W23Wgy9jO5yYUU+g==$k3CJkYrPw+T705hnUl9qrdAI/SEiApHfCLv8LWhb2oM=
+      # scrypt$$16384$$8$$1$$TKY4F1W23Wgy9jO5yYUU+g==$$k3CJkYrPw+T705hnUl9qrdAI/SEiApHfCLv8LWhb2oM=
+      - HERMES_DASHBOARD_BASIC_AUTH_USERNAME=${HERMES_DASHBOARD_BASIC_AUTH_USERNAME}
+      - HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH=${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH}
+      - HERMES_DASHBOARD_BASIC_AUTH_SECRET=${HERMES_DASHBOARD_BASIC_AUTH_SECRET}
+      
     # Localhost-only. For remote access, tunnel via `ssh -L 9119:localhost:9119`.
-    command: ["dashboard", "--host", "127.0.0.1", "--no-open"]
+    command: ["dashboard", "--host", "0.0.0.0", "--no-open"]
